@@ -4,7 +4,7 @@ name: Dynasty Bot
 on:
   schedule:
     - cron: "*/15 * * * *"   # Schnellmodus alle 15 Minuten (Zeiten in UTC)
-    - cron: "0 6 * * *"      # Tagesbericht um 06:00 UTC (7 oder 8 Uhr Schweizer Zeit)
+    - cron: "0 6,7,18,19 * * *"   # Kandidaten für den Tagesbericht, das Skript sendet nur um 8 und 20 Uhr Schweizer Zeit
   workflow_dispatch:         # Knopf zum Testen von Hand
 
 concurrency: dynasty-bot
@@ -25,6 +25,8 @@ jobs:
             injuries.json
             news.json
             players.json
+            last_daily.json
+            tg_offset.json
           key: state-${{ github.run_id }}
           restore-keys: state-
       - name: Zugangsdaten aus den Secrets schreiben
@@ -35,7 +37,7 @@ jobs:
         run: python -c "import json,os;json.dump({'USER':os.environ['U'],'TOKEN':os.environ['T'],'CHAT':os.environ['C']},open('config.json','w'))"
       - name: Bot starten
         run: |
-          if [ "${{ github.event.schedule }}" = "0 6 * * *" ]; then
+          if [ "${{ github.event.schedule }}" = "0 6,7,18,19 * * *" ]; then
             python dynasty_bot.py
           else
             python dynasty_bot.py fast
