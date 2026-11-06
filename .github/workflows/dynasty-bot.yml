@@ -1,0 +1,42 @@
+# Gehört in dein GitHub-Repository unter .github/workflows/dynasty-bot.yml
+name: Dynasty Bot
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # Schnellmodus alle 15 Minuten (Zeiten in UTC)
+    - cron: "0 6 * * *"      # Tagesbericht um 06:00 UTC (7 oder 8 Uhr Schweizer Zeit)
+  workflow_dispatch:         # Knopf zum Testen von Hand
+
+concurrency: dynasty-bot
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # Merkt sich zwischen den Läufen, was schon gemeldet wurde
+      - uses: actions/cache@v4
+        with:
+          path: |
+            seen.json
+            injuries.json
+            news.json
+            players.json
+          key: state-${{ github.run_id }}
+          restore-keys: state-
+      - name: Zugangsdaten aus den Secrets schreiben
+        env:
+          U: ${{ secrets.SLEEPER_USER }}
+          T: ${{ secrets.TG_TOKEN }}
+          C: ${{ secrets.TG_CHAT }}
+        run: python -c "import json,os;json.dump({'USER':os.environ['U'],'TOKEN':os.environ['T'],'CHAT':os.environ['C']},open('config.json','w'))"
+      - name: Bot starten
+        run: |
+          if [ "${{ github.event.schedule }}" = "0 6 * * *" ]; then
+            python dynasty_bot.py
+          else
+            python dynasty_bot.py fast
+          fi
