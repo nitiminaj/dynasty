@@ -33,10 +33,11 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 SEEN, PL, INJ, NEWS, LAST = (os.path.join(BASE, f) for f in ("seen.json", "players.json", "injuries.json", "news.json", "last_daily.json"))
 OFFSET = os.path.join(BASE, "tg_offset.json")
 REPORT_HOURS = (8, 20)  # Tagesbericht nur um 8 und 20 Uhr Schweizer Zeit
-# News-Feeds. Nur der ESPN-Link wurde geprüft, die anderen bitte bei Fehlermeldung anpassen oder entfernen.
-FEEDS = ["https://www.espn.com/espn/rss/nfl/news",
-         "https://profootballtalk.nbcsports.com/feed/",
-         "https://www.cbssports.com/rss/headlines/nfl/"]
+# News-Feeds. Bei "Feed nicht lesbar" im Protokoll die Adresse anpassen oder die Zeile entfernen.
+# (ESPN liefert vom GitHub-Server aus eine leere Antwort und ist deshalb nicht mehr dabei.)
+FEEDS = ["https://profootballtalk.nbcsports.com/feed/",
+         "https://www.cbssports.com/rss/headlines/nfl/",
+         "https://www.rotowire.com/rss/news.php?sport=NFL"]
 KEYS = re.compile(r"\b(trade[sd]?|trading|acquire[sd]?|released|waived|injured reserve|season-ending|"
                   r"out for the season|torn|acl|suspended|suspension)\b", re.I)
 OUT = {"Out", "IR", "PUP", "Sus", "NA", "COV", "Doubtful"}
@@ -115,7 +116,9 @@ def feed_items(url):
     for e in root.iter():
         if e.tag.split("}")[-1] in ("item", "entry"):
             kid = lambda n: next((c for c in e if c.tag.split("}")[-1] == n), None)
-            t, l, d = kid("title"), kid("link"), kid("description") or kid("summary")
+            t, l, d = kid("title"), kid("link"), kid("description")
+            if d is None:
+                d = kid("summary")
             yield ((t.text or "").strip() if t is not None else "",
                    ((l.text or l.get("href") or "").strip()) if l is not None else "",
                    (d.text or "") if d is not None else "")
